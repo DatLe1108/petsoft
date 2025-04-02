@@ -1,6 +1,6 @@
 // import { NextResponse } from "next/server";
 
-import auth from "./lib/auth";
+import { auth } from "./lib/auth";
 
 // export const middleware = (request: Request) => {
 //   console.log(request.url);

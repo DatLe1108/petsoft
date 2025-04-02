@@ -1,4 +1,7 @@
 import NextAuth, { NextAuthConfig } from "next-auth";
+import Credentials from "next-auth/providers/credentials";
+import prisma from "./db";
+import bcrypt from "bcryptjs";
 
 const config = {
   pages: {
@@ -10,21 +13,57 @@ const config = {
     strategy: "jwt",
   },
   //How the user would login (email, google, etc)
-  providers: [],
+  providers: [
+    Credentials({
+      async authorize(credentials) {
+        //run on login
+        const { email, password } = credentials;
+
+        const user = await prisma.user.findUnique({
+          where: {
+            email,
+          },
+        });
+
+        if (!user) {
+          console.log("User not found");
+          return null;
+        }
+
+        const passwordsMath = await bcrypt.compare(
+          password,
+          user.hashedPassword
+        );
+
+        if (!passwordsMath) {
+          console.log("Invalid credentials");
+          return null;
+        }
+
+        return user;
+      },
+    }),
+  ],
   // do something with callbacks when user login
   callbacks: {
-    authorized: ({ request }) => {
+    authorized: ({ auth, request }) => {
+      // runs on every request with middleware
+      const isLoggedIn = Boolean(auth?.user);
       const isTryingToAccessApp = request.nextUrl.pathname.includes("/app");
 
-      if (isTryingToAccessApp) {
+      if (!isLoggedIn && isTryingToAccessApp) {
         return false;
       }
 
-      return true;
+      if (isLoggedIn && isTryingToAccessApp) {
+        return true;
+      }
+
+      if (!isTryingToAccessApp) {
+        return true;
+      }
     },
   },
 } satisfies NextAuthConfig;
 
-const { auth } = NextAuth(config);
-
-export default auth;
+export const { auth, signIn } = NextAuth(config);
