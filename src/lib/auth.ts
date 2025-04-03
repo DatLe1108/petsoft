@@ -69,6 +69,25 @@ const config = {
 
       return false;
     },
+    jwt: ({ token, user }) => {
+      //function called when jwt is generated
+      if (user) {
+        //on sign in
+        token.userId = user.id;
+      }
+
+      return token;
+    },
+
+    session: ({ session, token }) => {
+      // this will availeble on client side, be careful with this
+
+      if (session.user) {
+        session.user.id = token.userId;
+      }
+
+      return session;
+    },
   },
 } satisfies NextAuthConfig;
 
