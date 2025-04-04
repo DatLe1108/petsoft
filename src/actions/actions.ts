@@ -5,6 +5,7 @@ import { sleep } from "@/lib/utils";
 import { petFormSchema, petIdSchema } from "@/lib/validation";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 //user actions
 
@@ -36,6 +37,12 @@ export async function signUp(formData: FormData) {
 export async function addPet(pet: unknown) {
   await sleep(1);
 
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
   const validatedPet = petFormSchema.safeParse(pet);
 
   if (!validatedPet.success) {
@@ -46,9 +53,17 @@ export async function addPet(pet: unknown) {
 
   try {
     await prisma.pet.create({
-      data: validatedPet.data,
+      data: {
+        ...validatedPet.data,
+        user: {
+          connect: {
+            id: session.user.id,
+          },
+        },
+      },
     });
   } catch (e) {
+    console.log(e);
     return {
       message: "Failed to add pet",
     };
