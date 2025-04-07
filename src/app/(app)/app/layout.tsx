@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import PetContextProvider from "@/contexts/pet-context-provider";
 import SearchContextProvider from "@/contexts/search-context-provider";
 import prisma from "@/lib/db";
-import { checkAuth } from "@/lib/server-utils";
+import { checkAuth, getPetsByUserId } from "@/lib/server-utils";
 
 type LayoutProps = {
   children: React.ReactNode;
@@ -15,11 +15,8 @@ export default async function Layout({ children }: LayoutProps) {
   // authentication check
   const session = await checkAuth();
 
-  const pets = await prisma.pet.findMany({
-    where: {
-      userId: session.user.id,
-    },
-  });
+  const pets = await getPetsByUserId(session.user.id);
+
   return (
     <>
       <BackgroundPattern />
